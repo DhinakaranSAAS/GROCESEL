@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groseloa - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="login-wrapper">
+        <div class="login-left">
+            <h1>Groseloa</h1>
+            <p>Fresh rural produce delivered.<br>Connecting you to fresh, local produce.</p>
+        </div>
+        <div class="login-right">
+            <div class="login-form-container">
+                <div class="login-header">
+                    <h2>Log in</h2>
+                    <p style="color: #666;">Welcome back! Please enter your details.</p>
+                </div>
+
+                <div id="error-msg" class="error-message">Invalid Username or Password</div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Enter password">
+                    </div>
+
+                    <div style="margin-bottom: 20px; display:flex; align-items:center;">
+                        <input type="checkbox" id="show-password" style="width:auto; margin-right:10px;">
+                        <label for="show-password" style="margin:0; display:inline;">Show Password</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Log in</button>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="#" style="color: #666; font-size: 0.9rem; text-decoration: none;">Forgot Password?</a>
+                        <span style="margin: 0 10px; color: #ccc;">|</span>
+                        <a href="#" id="open-register-btn"
+                            style="color: var(--primary-color); font-weight: 600; font-size: 0.9rem; text-decoration: none;">Create
+                            Account</a>
+                    </div>
+                </form>
+
+                <!-- Registration Modal -->
+                <div class="modal-overlay" id="register-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Create Account</h2>
+                            <button class="close-btn" id="close-modal">&times;</button>
+                        </div>
+
+                        <div class="toggle-container">
+                            <div class="toggle-slider" id="toggle-slider"></div>
+                            <button class="toggle-btn active" onclick="setRegisterType('admin')">Admin</button>
+                            <button class="toggle-btn" onclick="setRegisterType('customer')">Customer</button>
+                        </div>
+
+                        <div id="register-error" class="error-message"></div>
+                        <div id="register-success" class="success-message"></div>
+
+                        <form id="register-form">
+                            <!-- Hidden input to track type -->
+                            <input type="hidden" id="register-type" value="admin">
+
+                            <!-- Admin Fields -->
+                            <div id="admin-fields" class="conditional-field active">
+                                <div class="form-group">
+                                    <label>Shop Name</label>
+                                    <input type="text" id="reg-shop-name" placeholder="My Grocery Shop">
+                                </div>
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="reg-username" placeholder="Choose a username">
+                                </div>
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <input type="password" id="reg-password" placeholder="Choose a password">
+                                </div>
+                            </div>
+
+                            <!-- Customer Fields -->
+                            <div id="customer-fields" class="conditional-field">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" id="reg-cust-name" placeholder="Your Name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="text" id="reg-cust-phone" placeholder="Mobile Number">
+                                </div>
+                                <div class="form-group">
+                                    <p style="font-size: 0.9em; color:#666;">
+                                        Note: Creating a customer account directly connects you to our platform.
+                                        You may need to link with a shopkeeper later.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Register</button>
+                        </form>
+                    </div>
+                </div>
+
+                <br>
+                <p style="text-align:center; font-size:small; color:#999; margin-top: 40px;">
+                    Dev Access: admin / admin123
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Password toggle
+        document.getElementById('show-password').addEventListener('change', function () {
+            const passwordInput = document.getElementById('password');
+            if (this.checked) {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+
+            // Loading state
+            btn.innerText = 'Logging in...';
+            btn.disabled = true;
+
+            const result = await apiCall('/auth/login', 'POST', { username, password });
+
+            if (result && result.message === "Login successful") {
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Registration Logic
+        const modal = document.getElementById('register-modal');
+        const openBtn = document.getElementById('open-register-btn');
+        const closeBtn = document.getElementById('close-modal');
+        const slider = document.getElementById('toggle-slider');
+        const typeInput = document.getElementById('register-type');
+
+        openBtn.onclick = () => modal.classList.add('active');
+        closeBtn.onclick = () => modal.classList.remove('active');
+        window.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+
+        window.setRegisterType = function (type) {
+            typeInput.value = type;
+            const adminFields = document.getElementById('admin-fields');
+            const custFields = document.getElementById('customer-fields');
+            const btns = document.querySelectorAll('.toggle-btn');
+
+            if (type === 'admin') {
+                slider.style.transform = 'translateX(0)';
+                btns[0].classList.add('active');
+                btns[1].classList.remove('active');
+                adminFields.classList.add('active');
+                custFields.classList.remove('active');
+            } else {
+                slider.style.transform = 'translateX(100%)';
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+                adminFields.classList.remove('active');
+                custFields.classList.add('active');
+            }
+        };
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const type = typeInput.value;
+            const errorDiv = document.getElementById('register-error');
+            const successDiv = document.getElementById('register-success');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            const payload = { type };
+
+            if (type === 'admin') {
+                payload.username = document.getElementById('reg-username').value;
+                payload.password = document.getElementById('reg-password').value;
+                payload.shopName = document.getElementById('reg-shop-name').value;
+                if (!payload.username || !payload.password || !payload.shopName) {
+                    errorDiv.innerText = "All Admin fields are required";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+            } else {
+                payload.name = document.getElementById('reg-cust-name').value;
+                payload.phone = document.getElementById('reg-cust-phone').value;
+                // Basic validation for customer
+                if (!payload.name || !payload.phone) {
+                    errorDiv.innerText = "Name and Phone are required";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+            }
+
+            const result = await apiCall('/auth/register', 'POST', payload);
+
+            if (result && result.message && !result.message.toLowerCase().includes("failed")) {
+                if (type === 'admin') {
+                    successDiv.innerText = "Account Created! You can now login.";
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        document.getElementById('username').value = payload.username;
+                    }, 2000);
+                } else {
+                    // Customer flow (message only for now)
+                    successDiv.innerText = result.message;
+                    successDiv.style.display = 'block';
+                }
+            } else {
+                errorDiv.innerText = (result && result.message) ? result.message : "Registration Failed";
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>

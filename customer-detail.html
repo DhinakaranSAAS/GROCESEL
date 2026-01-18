@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groseloa - Customer Detail</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="customers.html">&lsaquo; Back</a>
+        <span>Customer Detail</span>
+    </div>
+
+    <div class="container">
+        <h2 id="customer-name">Loading...</h2>
+        <p style="text-align:center; color:#666;" id="customer-phone"></p>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="card"
+                style="flex:1; display: block; text-align:center; background-color: #f0fff4; border: 1px solid var(--primary-color);">
+                <div style="font-size: 0.9em; color:#666;">Advance Balance</div>
+                <div id="customer-advance" style="font-size: 1.8em; color: var(--primary-color); font-weight:bold;">...
+                </div>
+            </div>
+            <div class="card"
+                style="flex:1; display: block; text-align:center; background-color: #fff5f5; border: 1px solid var(--danger-color);">
+                <div style="font-size: 0.9em; color:#666;">Credit Due</div>
+                <div id="customer-credit" style="font-size: 1.8em; color: var(--danger-color); font-weight:bold;">...
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <a id="btn-add-advance" href="#" class="btn" style="background-color: var(--primary-color); color:white;">+
+                Add Advance</a>
+            <a id="btn-purchase" href="#" class="btn" style="background-color: #f59e0b; color:white;">- Purchase
+                (Adv)</a>
+
+            <a id="btn-give-credit" href="#" class="btn btn-danger">+ Give Credit</a>
+            <a id="btn-accept-payment" href="#" class="btn" style="background-color: #1976d2; color:white;">- Accept
+                Payment</a>
+        </div>
+
+        <h3>Transaction History</h3>
+        <div id="transaction-list">
+            Loading...
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        const customerId = getQueryParam('id');
+
+        async function loadData() {
+            if (!customerId) { alert("No ID"); return; }
+
+            const [customer, history] = await Promise.all([
+                apiCall(`/customers/${customerId}`),
+                apiCall(`/transactions/customer/${customerId}`)
+            ]);
+
+            if (customer) {
+                document.getElementById('customer-name').innerText = customer.name;
+                document.getElementById('customer-phone').innerText = customer.phone || 'No Phone';
+
+                document.getElementById('customer-advance').innerText = formatCurrency(customer.advanceBalance || 0);
+                document.getElementById('customer-credit').innerText = formatCurrency(customer.creditBalance || 0);
+
+                document.getElementById('btn-add-advance').href = `transaction.html?customerId=${customerId}&type=ADVANCE_ADD`;
+                document.getElementById('btn-purchase').href = `transaction.html?customerId=${customerId}&type=PURCHASE`;
+                document.getElementById('btn-give-credit').href = `transaction.html?customerId=${customerId}&type=CREDIT_ADD`;
+                document.getElementById('btn-accept-payment').href = `transaction.html?customerId=${customerId}&type=PAYMENT`;
+            }
+
+            const list = document.getElementById('transaction-list');
+            list.innerHTML = '';
+            if (history && history.length > 0) {
+                history.forEach(tx => {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+
+                    let color = 'black';
+                    let sign = '';
+                    let label = tx.type;
+
+                    if (tx.type === 'ADVANCE_ADD') { color = 'green'; sign = '+'; label = 'Advance Added'; }
+                    else if (tx.type === 'PURCHASE') { color = '#f59e0b'; sign = '-'; label = 'Purchase (Adv)'; }
+                    else if (tx.type === 'CREDIT_ADD') { color = 'red'; sign = '+'; label = 'Credit Given'; }
+                    else if (tx.type === 'PAYMENT') { color = 'blue'; sign = '-'; label = 'Payment Received'; }
+
+                    div.innerHTML = `
+                        <div>
+                            <div class="list-item-title">${label}</div>
+                            <div class="list-item-subtitle">${new Date(tx.timestamp).toLocaleString()} - ${tx.description || ''}</div>
+                        </div>
+                        <div style="font-weight:bold; color: ${color};">
+                             ${sign} ${formatCurrency(tx.amount)}
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } else {
+                list.innerHTML = '<p style="text-align:center;">No transactions yet.</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+
+</html>

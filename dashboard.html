@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groseloa - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="navbar">
+        <span>Groseloa Dashboard</span>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="container">
+
+        <div class="card" onclick="window.location.href='customers.html'">
+            <div>
+                <h3>Customers</h3>
+                <div class="list-item-subtitle" id="total-customers">Loading...</div>
+            </div>
+            <div style="font-size: 2em;">&rsaquo;</div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid var(--success-color);">
+            <div>
+                <h3>Collected Advance</h3>
+                <div class="list-item-title" id="total-advance" style="font-size: 1.5em; color: var(--success-color);">
+                    Loading...</div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid var(--danger-color);">
+            <div>
+                <h3>Total Credit Given</h3>
+                <div class="list-item-title" id="total-outstanding"
+                    style="font-size: 1.5em; color: var(--danger-color);">Loading...</div>
+            </div>
+        </div>
+
+        <h3>Recent Transactions</h3>
+        <div id="recent-transactions">
+            <!-- Transactions will be loaded here -->
+            <p style="text-align:center;">Loading...</p>
+        </div>
+
+        <a href="add-customer.html" class="btn btn-primary">Add New Customer</a>
+        <a href="customers.html" class="btn btn-secondary">View All Customers</a>
+
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const data = await apiCall('/dashboard/summary');
+            if (data) {
+                document.getElementById('total-customers').innerText = data.totalCustomers + " Customers";
+                document.getElementById('total-outstanding').innerText = formatCurrency(data.totalOutstanding || 0);
+                document.getElementById('total-advance').innerText = formatCurrency(data.totalAdvance || 0);
+
+                const txContainer = document.getElementById('recent-transactions');
+                txContainer.innerHTML = '';
+
+                if (data.recentTransactions && data.recentTransactions.length > 0) {
+                    data.recentTransactions.forEach(tx => {
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        // Simple logic to show name if available, but transaction object might not have customer name directly if nested. 
+                        // Backend TransactionDTO often helps, but looking at Entity Graph, Transaction has Customer.
+                        // We will rely on JSON serialization.
+                        const date = new Date(tx.timestamp).toLocaleDateString();
+                        const isCredit = tx.type === 'CREDIT';
+                        const color = isCredit ? 'red' : 'green';
+                        const sign = isCredit ? '+' : '-';
+
+                        // Note: Transaction entity has 'customer' field? Need to check if it's serialized.
+                        // Assuming default serialization includes nested customer.
+                        const customerName = tx.customer ? tx.customer.name : 'Unknown';
+
+                        div.innerHTML = `
+                            <div>
+                                <div class="list-item-title">${customerName}</div>
+                                <div class="list-item-subtitle">${date} - ${tx.description || ''}</div>
+                            </div>
+                            <div style="font-weight:bold; color: ${color};">
+                                ${sign} ${formatCurrency(tx.amount)}
+                            </div>
+                        `;
+                        txContainer.appendChild(div);
+                    });
+                } else {
+                    txContainer.innerHTML = '<p style="text-align:center;">No recent transactions.</p>';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
